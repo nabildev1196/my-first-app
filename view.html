@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>All Submissions</title>
+  <!-- Check login token immediately before rendering to prevent flash of content -->
+  <script>
+    if (!localStorage.getItem("token")) {
+      window.location.replace("login.html");
+    }
+  </script>
   <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +20,8 @@
       --card-bg: rgba(30, 41, 59, 0.7);
       --card-border: rgba(255, 255, 255, 0.08);
       --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.3);
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --success: #34d399;
@@ -78,14 +86,39 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
 
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
     h1 {
-      font-size: 2.25rem;
+      font-size: 2rem;
       font-weight: 700;
-      margin-bottom: 24px;
       background: linear-gradient(to right, #ffffff, var(--text-muted));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-align: center;
+    }
+
+    .btn-logout {
+      padding: 8px 16px;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: 8px;
+      color: var(--error);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-logout:hover {
+      background: var(--error);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(248, 113, 113, 0.2);
     }
 
     #list {
@@ -115,7 +148,7 @@
       justify-content: space-between;
       align-items: baseline;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .contact-info {
@@ -132,13 +165,6 @@
       font-weight: 300;
       font-size: 0.9rem;
       margin-left: 4px;
-    }
-
-    .phone-number {
-      font-size: 0.9rem;
-      color: var(--primary);
-      font-weight: 500;
-      margin-top: 4px;
     }
 
     .message-text {
@@ -169,7 +195,7 @@
       color: var(--error);
     }
 
-    /* Simple modern loading spinner */
+    /* Loader styling */
     .loader {
       display: flex;
       justify-content: center;
@@ -195,7 +221,7 @@
         padding: 30px 20px;
       }
       h1 {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
       }
     }
   </style>
@@ -205,7 +231,10 @@
   <div class="bg-shape shape-2"></div>
 
   <div class="container">
-    <h1>All submissions</h1>
+    <div class="header-bar">
+      <h1>All submissions</h1>
+      <button class="btn-logout" id="logoutBtn">Log out</button>
+    </div>
     
     <div id="statusContainer" class="loader">
       <div class="spinner"></div>
@@ -217,7 +246,14 @@
   <script>
     const listElement = document.getElementById('list');
     const statusContainer = document.getElementById('statusContainer');
+    const logoutBtn = document.getElementById('logoutBtn');
     const URL = "https://script.google.com/macros/s/AKfycbzYweP57tDiLdNnX05X4EmNB5YRQvOU0e6_qPFPK23Efx4ud0T_czTAkVJ4A4DO0wdvJQ/exec";
+
+    // Handle logout click
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem("token");
+      window.location.href = "login.html";
+    });
 
     function formatDate(dateVal) {
       if (!dateVal) return "";
@@ -233,42 +269,52 @@
     }
 
     async function loadSubmissions() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "login.html";
+        return;
+      }
+
       try {
-        // Fetch call matching the exact requested shape
-        const res = await fetch(URL);
+        const params = new URLSearchParams({ action: "getContacts", token });
+        const res = await fetch(URL + "?" + params.toString());
         const data = await res.json();
 
         statusContainer.style.display = 'none';
 
-        if (data && data.ok && Array.isArray(data.contacts) && data.contacts.length > 0) {
-          // Render submissions list
-          listElement.innerHTML = '';
-          data.contacts.forEach(contact => {
-            const li = document.createElement('li');
-            li.className = 'submission-item';
+        if (data.ok === false) {
+          localStorage.removeItem("token");
+          window.location.href = "login.html";
+          return;
+        }
 
-            // Setup display values
-            const name = contact.name || 'Anonymous';
-            const email = contact.email ? `(${contact.email})` : '';
-            const phone = contact.phone || '';
-            const message = contact.message || '';
-            const createdAt = formatDate(contact.created_at || contact.timestamp || '');
+        if (data.ok === true) {
+          if (Array.isArray(data.contacts) && data.contacts.length > 0) {
+            listElement.innerHTML = '';
+            data.contacts.forEach(contact => {
+              const li = document.createElement('li');
+              li.className = 'submission-item';
 
-            li.innerHTML = `
-              <div class="item-header">
-                <div class="contact-info">
-                  <strong>${escapeHTML(name)}</strong>
-                  <span class="email">${escapeHTML(email)}</span>
-                  ${phone ? `<div class="phone-number">${escapeHTML(phone)}</div>` : ''}
+              const name = contact.name || 'Anonymous';
+              const email = contact.email ? `(${contact.email})` : '';
+              const message = contact.message || '';
+              const createdAt = formatDate(contact.created_at || contact.timestamp || '');
+
+              li.innerHTML = `
+                <div class="item-header">
+                  <div class="contact-info">
+                    <strong>${escapeHTML(name)}</strong>
+                    <span class="email">${escapeHTML(email)}</span>
+                  </div>
+                  <div class="timestamp">${escapeHTML(createdAt)}</div>
                 </div>
-                <div class="timestamp">${escapeHTML(createdAt)}</div>
-              </div>
-              <p class="message-text">${escapeHTML(message)}</p>
-            `;
-            listElement.appendChild(li);
-          });
-        } else {
-          showStatus("No submissions yet");
+                <p class="message-text">${escapeHTML(message)}</p>
+              `;
+              listElement.appendChild(li);
+            });
+          } else {
+            showStatus("No submissions yet");
+          }
         }
       } catch (error) {
         console.error('Error loading submissions:', error);
