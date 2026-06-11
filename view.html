@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Submissions</title>
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #34d399;
+      --error: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow-x: hidden;
+    }
+
+    /* Decorative background shapes */
+    .bg-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    .shape-1 {
+      top: 10%;
+      left: 15%;
+      width: 300px;
+      height: 300px;
+      background: var(--primary);
+    }
+
+    .shape-2 {
+      bottom: 15%;
+      right: 10%;
+      width: 400px;
+      height: 400px;
+      background: #a855f7;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 600px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      background: linear-gradient(to right, #ffffff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    #list {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .submission-item {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .submission-item:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .item-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .contact-info {
+      font-size: 1rem;
+    }
+
+    .contact-info strong {
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .contact-info span.email {
+      color: var(--text-muted);
+      font-weight: 300;
+      font-size: 0.9rem;
+      margin-left: 4px;
+    }
+
+    .phone-number {
+      font-size: 0.9rem;
+      color: var(--primary);
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .message-text {
+      color: #e2e8f0;
+      line-height: 1.6;
+      font-size: 0.95rem;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      white-space: pre-line;
+    }
+
+    .timestamp {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    .status-msg {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 300;
+    }
+
+    .status-msg.error {
+      color: var(--error);
+    }
+
+    /* Simple modern loading spinner */
+    .loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(99, 102, 241, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-shape shape-1"></div>
+  <div class="bg-shape shape-2"></div>
+
+  <div class="container">
+    <h1>All submissions</h1>
+    
+    <div id="statusContainer" class="loader">
+      <div class="spinner"></div>
+    </div>
+
+    <ul id="list"></ul>
+  </div>
+
+  <script>
+    const listElement = document.getElementById('list');
+    const statusContainer = document.getElementById('statusContainer');
+    const URL = "https://script.google.com/macros/s/AKfycbzYweP57tDiLdNnX05X4EmNB5YRQvOU0e6_qPFPK23Efx4ud0T_czTAkVJ4A4DO0wdvJQ/exec";
+
+    function formatDate(dateVal) {
+      if (!dateVal) return "";
+      const date = new Date(dateVal);
+      if (isNaN(date.getTime())) return String(dateVal);
+      return date.toLocaleDateString(undefined, { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    async function loadSubmissions() {
+      try {
+        // Fetch call matching the exact requested shape
+        const res = await fetch(URL);
+        const data = await res.json();
+
+        statusContainer.style.display = 'none';
+
+        if (data && data.ok && Array.isArray(data.contacts) && data.contacts.length > 0) {
+          // Render submissions list
+          listElement.innerHTML = '';
+          data.contacts.forEach(contact => {
+            const li = document.createElement('li');
+            li.className = 'submission-item';
+
+            // Setup display values
+            const name = contact.name || 'Anonymous';
+            const email = contact.email ? `(${contact.email})` : '';
+            const phone = contact.phone || '';
+            const message = contact.message || '';
+            const createdAt = formatDate(contact.created_at || contact.timestamp || '');
+
+            li.innerHTML = `
+              <div class="item-header">
+                <div class="contact-info">
+                  <strong>${escapeHTML(name)}</strong>
+                  <span class="email">${escapeHTML(email)}</span>
+                  ${phone ? `<div class="phone-number">${escapeHTML(phone)}</div>` : ''}
+                </div>
+                <div class="timestamp">${escapeHTML(createdAt)}</div>
+              </div>
+              <p class="message-text">${escapeHTML(message)}</p>
+            `;
+            listElement.appendChild(li);
+          });
+        } else {
+          showStatus("No submissions yet");
+        }
+      } catch (error) {
+        console.error('Error loading submissions:', error);
+        showStatus("Couldn't load — try again later", true);
+      }
+    }
+
+    function showStatus(message, isError = false) {
+      statusContainer.style.display = 'block';
+      statusContainer.className = isError ? 'status-msg error' : 'status-msg';
+      statusContainer.innerText = message;
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Load on startup
+    window.addEventListener('DOMContentLoaded', loadSubmissions);
+  </script>
+</body>
+</html>
